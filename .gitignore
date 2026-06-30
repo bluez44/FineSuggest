@@ -1,39 +1,61 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
 
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 # Build output
-.next/
-out/
-dist/
-build/
-
+# debug
+# dependencies
+# Dependencies
 # Env
-.env
-.env.local
-.env.*.local
-
+# env files (can opt-in for committing if needed)
+# IDE
 # Logs
+# misc
+# next.js
+# OS
+# production
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Supabase local
+# testing
+# Testing
+# typescript
+# vercel
 *.log
+*.pem
+*.swp
+*.tsbuildinfo
+.DS_Store
+.env
+.env*
+.env.*.local
+.env.local
+.idea/
+.next/
+.pnp
+.pnp.*
+.pnp.js
+.pnpm-debug.log*
+.supabase/
+.vercel
+.vscode/
+.yarn/*
+/.next/
+/.pnp
+/build
+/coverage
+/node_modules
+/out/
+build/
+coverage/
+dist/
+next-env.d.ts
+node_modules/
 npm-debug.log*
+out/
+playwright-report/
+pnpm-debug.log*
+test-results/
+Thumbs.db
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# Testing
-coverage/
-playwright-report/
-test-results/
-
-# Supabase local
-.supabase/
