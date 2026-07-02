@@ -15,8 +15,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     .single();
 
   const showAdmin =
-    profile?.role === 'admin' ||
-    isAllowlistedAdmin(user.email ?? '', serverEnv.ADMIN_EMAILS);
+    profile?.role === 'admin' || isAllowlistedAdmin(user.email ?? '', serverEnv.ADMIN_EMAILS);
 
   return (
     <AppShell email={user.email ?? ''} showAdmin={showAdmin}>

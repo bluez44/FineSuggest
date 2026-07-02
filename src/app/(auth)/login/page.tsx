@@ -13,9 +13,7 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm space-y-6 rounded-xl border bg-white p-8 shadow-sm">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold">FineSuggest</h1>
-          <p className="text-sm text-slate-600">
-            Trợ lý AI hỏi đáp luật giao thông Việt Nam
-          </p>
+          <p className="text-sm text-slate-600">Trợ lý AI hỏi đáp luật giao thông Việt Nam</p>
         </div>
         <GoogleSignInButton />
       </div>

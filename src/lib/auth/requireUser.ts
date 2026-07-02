@@ -3,7 +3,9 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export async function requireUser() {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     redirect('/login');
   }
@@ -12,6 +14,8 @@ export async function requireUser() {
 
 export async function getOptionalUser() {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 }

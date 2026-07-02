@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-typecheck-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prettier --check "src/**/*.{ts,tsx,css}" "test/**/*.{ts,tsx}"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: fake-publishable-key-for-unit-tests
+          SUPABASE_SERVICE_ROLE_KEY: fake-service-role-for-unit-tests
