@@ -1,10 +1,11 @@
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { clientEnv } from '@/lib/env';
+import type { Database } from '@/types/database';
 
 export async function createServerClient() {
   const cookieStore = await cookies();
-  return createSupabaseServerClient(
+  return createSupabaseServerClient<Database>(
     clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     clientEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
