@@ -2059,3 +2059,35 @@ Run this checklist before declaring Plan 1 complete:
 - [ ] Plan 1 commits exist on `main` branch; `git log --oneline | wc -l` ≥ 26.
 
 When all boxes are checked, write a brief handoff note in `docs/superpowers/plans/2026-06-30-plan-1-foundation.md` at the bottom (e.g., "Completed YYYY-MM-DD. Next: Plan 2 — Ingestion.") and move on to Plan 2.
+
+---
+
+## Handoff — Plan 1 completed 2026-07-02
+
+**Status:** 26/26 tasks implemented. Verified end-to-end except manual OAuth sign-in flow (requires user to finish Google Cloud + Supabase Dashboard config from Task 19).
+
+**Key deviations from plan text (all recorded in commits):**
+
+1. **Supabase Cloud instead of local Docker.** Docker/podman unavailable on dev machine. Migrations pushed to cloud project `xybjldnhlpnkmlkijcfk` via `supabase db push --db-url ...`. Task 6 changed from `supabase start` to `supabase init` + workaround (link blocked by missing personal access token — fine, we use `--db-url` directly).
+2. **Publishable key naming.** Env vars use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase's newer name) instead of `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `env.ts` and all 3 Supabase clients updated accordingly.
+3. **Tailwind v4.** `create-next-app` installed v4 (not v3 as plan assumed). shadcn/ui v4 handled the switch natively; no `tailwind.config.ts` file (CSS-based config in `globals.css`). All UI tasks worked without modification.
+4. **Next.js 16.** `create-next-app` installed 16.2.9 (not 15). Everything works; only cosmetic mismatch in Task 1 commit message.
+5. **`src/types/database.ts` manually constructed.** `supabase gen types` requires Docker/podman container `supabase/postgres-meta`. Types written by hand match the schema, but the `Functions` section (needed for `match_chunks` RPC in Plan 3) is missing. Fix in Plan 3 either by installing podman or hand-adding the RPC signature.
+6. **`.claude/settings.local.json` accidentally committed** (Task 5). Non-sensitive Claude Code local prefs. Consider adding `.claude/` to `.gitignore` in Plan 2 if it drifts.
+7. **`--legacy-peer-deps` used once** (Task 4 `@vitejs/plugin-react` install). No `.npmrc` set globally, so future installs are unaffected. Note for CI if a dep resolution issue reappears.
+
+**Verified passing:**
+- `npm run typecheck` → 0
+- `npm run lint` → 0
+- `npm test` → 7 tests (1 smoke + 6 admin-allowlist)
+- `npm run e2e -- --project=chromium` → 2 tests (landing loads, unauth `/chat` → `/login`)
+- `npm run build` → succeeds, all 10 routes compiled
+
+**Still requires user to complete (from Task 19):**
+- Google Cloud Console OAuth Client creation
+- Supabase Dashboard → Auth → Providers → Google configuration
+- Supabase Dashboard → URL Configuration (Site URL + redirect URLs)
+
+Once done, run `npm run dev` and manually verify: sign in → land on `/chat` → sidebar shows Admin tab (if email in `ADMIN_EMAILS`) → dropdown → sign out.
+
+**Next: Plan 2 — Ingestion.** Loaders (PDF/DOCX/TXT/MD/URL) with Strategy+Factory pattern, Vietnamese law splitter, Gemini embedder, PgVectorStore, upload UI, Supabase DB webhook worker. Will begin after user confirms Task 19 works.
