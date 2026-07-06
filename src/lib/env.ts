@@ -16,12 +16,21 @@ const clientSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 });
 
-export const serverEnv = (() => {
-  if (typeof window !== 'undefined') {
-    throw new Error('serverEnv accessed in browser');
-  }
-  return serverSchema.parse(process.env);
-})();
+type ServerEnv = z.infer<typeof serverSchema>;
+
+let _serverEnv: ServerEnv | null = null;
+
+export const serverEnv = new Proxy({} as ServerEnv, {
+  get(_target, prop) {
+    if (typeof window !== 'undefined') {
+      throw new Error('serverEnv accessed in browser');
+    }
+    if (!_serverEnv) {
+      _serverEnv = serverSchema.parse(process.env);
+    }
+    return _serverEnv[prop as keyof ServerEnv];
+  },
+});
 
 export const clientEnv = clientSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
