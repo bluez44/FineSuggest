@@ -59,6 +59,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/ui": "^4.1.9",
+    "docx": "^9.7.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "pdf-lib": "^1.17.1",
