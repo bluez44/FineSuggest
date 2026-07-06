@@ -45,6 +45,7 @@ export type Database = {
           error_message: string | null;
           metadata: Json;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -58,6 +59,7 @@ export type Database = {
           error_message?: string | null;
           metadata?: Json;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -71,6 +73,7 @@ export type Database = {
           error_message?: string | null;
           metadata?: Json;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
