@@ -93,3 +93,23 @@ All 3 tests passing:
 - **Default Parameters:** `chunkSize: 800` and `chunkOverlap: 150` (~19% overlap) balances context retention and chunk count. Overridable via constructor options.
 - **No Metadata Preservation:** Current implementation does not forward `RawDoc.metadata` extras into chunks — only `page` is attached. This is acceptable per spec.
 - **Async Signature:** Split is `async` to accommodate future async processing (e.g., embedding or external lookups) without API changes.
+
+---
+
+## 6. Notes / Tech Debt
+
+### Fix Applied (Post-Review)
+
+The initial implementation used a fragile 40-character prefix for chunk position lookup, which had two critical failure modes:
+
+1. **Silent indexOf(-1) failure:** When the 40-char prefix isn't unique or is missing from the document, `indexOf` returns `-1`. The page lookup `p.start <= start < p.end` would then return `undefined` due to the comparison with a negative index, silently losing page attribution for affected chunks.
+2. **Non-monotonic search advancement:** On lookup failure, `searchFrom` remained unchanged, causing subsequent chunks to re-scan the same window and potentially fail again, leading to silent cascading failures.
+
+**Fix applied:** Implemented a two-tier fallback strategy with explicit monotonic advancement:
+- Attempt an 80-character probe (longer, more unique) first
+- If that fails, fall back to a 20-character probe
+- If both fail, advance `searchFrom` by `Math.max(1, content.length - chunkOverlap)` to ensure forward progress and prevent re-scanning
+- Explicitly set `page = undefined` when lookup fails, rather than relying on implicit `undefined` from a failed comparison with `-1`
+- Store `chunkOverlap` as an instance variable to support the recovery calculation
+
+This ensures that even with boilerplate-heavy or highly repetitive document content, chunks are processed with forward progress, and page attribution failures are explicit and localized rather than cascading silently through the entire chunk list.

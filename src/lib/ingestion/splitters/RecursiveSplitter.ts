@@ -9,11 +9,13 @@ export interface RecursiveSplitterOptions {
 
 export class RecursiveSplitter implements ChunkSplitter {
   private inner: RecursiveCharacterTextSplitter;
+  private chunkOverlap: number;
 
   constructor(opts: RecursiveSplitterOptions = {}) {
+    this.chunkOverlap = opts.chunkOverlap ?? 150;
     this.inner = new RecursiveCharacterTextSplitter({
       chunkSize: opts.chunkSize ?? 800,
-      chunkOverlap: opts.chunkOverlap ?? 150,
+      chunkOverlap: this.chunkOverlap,
       separators: ['\n\n', '\n', '. ', '? ', '! ', ' ', ''],
     });
   }
@@ -24,9 +26,23 @@ export class RecursiveSplitter implements ChunkSplitter {
     let searchFrom = 0;
 
     return strings.map((content, ordinal) => {
-      const start = doc.content.indexOf(content.slice(0, 40), searchFrom);
-      searchFrom = start >= 0 ? start + 1 : searchFrom;
-      const page = pageMap.find((p) => start >= p.start && start < p.end)?.page;
+      const longProbe = content.slice(0, Math.min(80, content.length));
+      let start = doc.content.indexOf(longProbe, searchFrom);
+      if (start < 0) {
+        const shortProbe = content.slice(0, Math.min(20, content.length));
+        start = doc.content.indexOf(shortProbe, searchFrom);
+      }
+
+      let page: number | undefined;
+      if (start >= 0) {
+        page = pageMap.find((p) => start >= p.start && start < p.end)?.page;
+        searchFrom = start + 1;
+      } else {
+        // Both probes failed. Advance conservatively so later chunks don't re-scan.
+        const advance = Math.max(1, content.length - this.chunkOverlap);
+        searchFrom = Math.min(searchFrom + advance, doc.content.length);
+      }
+
       return { content, ordinal, page };
     });
   }
