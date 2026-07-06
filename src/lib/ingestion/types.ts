@@ -36,6 +36,5 @@ export class IngestionError extends Error {
     override readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'IngestionError';
   }
 }
