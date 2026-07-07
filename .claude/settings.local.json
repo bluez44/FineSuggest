@@ -34,7 +34,9 @@
       "Bash(npx --yes shadcn@latest add avatar dialog dropdown-menu input textarea sheet sonner skeleton)",
       "Bash(tee /tmp/shadcn-add.log)",
       "Bash(grep -E '\\\\.\\(tsx|ts\\)$')",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(tee .superpowers/sdd/task-10-base.sha)",
+      "Bash(bash \"C:/Users/ADMIN/.claude/plugins/cache/claude-plugins-official/superpowers/6.1.1/skills/subagent-driven-development/scripts/task-brief\" docs/superpowers/plans/2026-07-06-plan-2-ingestion.md 10)"
     ]
   }
 }

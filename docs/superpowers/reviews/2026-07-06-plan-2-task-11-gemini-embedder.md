@@ -141,6 +141,9 @@ The `batchEmbedContents` endpoint returns all embeddings synchronously in one JS
 
 ## 6. Notes / Tech Debt
 
+### Review Fix: Embedding Count Validation (Review Finding)
+The initial implementation used `.slice(0, batch.length)` to defensively truncate responses, silently masking mismatches between requested and returned embeddings. This hidden failure mode could cause the API to silently drop results without alerting operators. During review, this was identified as problematic because silent data loss is worse than failing fast. The fix replaced the defensive slice with explicit validation: if `json.embeddings.length !== batch.length`, an `IngestionError` is thrown immediately with the expected vs. actual counts. This ensures API-side failures (returning wrong counts) are caught and visible, not silently truncated. Test 2's mock was also fixed to return exactly as many embeddings as requested (by parsing the request body's `requests.length`), eliminating the original reason for the slice workaround.
+
 ### Minor
 - The retry loop uses `attempt <= maxRetries` (inclusive), so `maxRetries: 2` allows 3 total attempts (0, 1, 2). This is consistent with what Test 4 expects (`maxRetries: 2` → fetcher called 3 times before throw), and aligns with the brief's intent.
 - `backoffMs` defaults to 500ms — production calls on 429 from Gemini will wait 500ms, 1000ms, 2000ms before failing. Operators should tune this via constructor if needed.

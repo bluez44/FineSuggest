@@ -26,18 +26,21 @@ describe('GeminiEmbedder', () => {
   });
 
   it('splits large input into batches of `batchSize`', async () => {
-    const perCall = 3;
-    const fetcher = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        embeddings: Array.from({ length: perCall }, () => ({ values: vec768() })),
-      }),
-      text: async () => '',
-      headers: new Headers(),
-    })) as unknown as typeof fetch;
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      const body = JSON.parse(init!.body as string) as { requests: unknown[] };
+      const count = body.requests.length;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          embeddings: Array.from({ length: count }, () => ({ values: vec768() })),
+        }),
+        text: async () => '',
+        headers: new Headers(),
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
 
-    const embedder = new GeminiEmbedder({ apiKey: 'k', fetcher, batchSize: perCall });
+    const embedder = new GeminiEmbedder({ apiKey: 'k', fetcher, batchSize: 3 });
     const inputs = Array.from({ length: 7 }, (_, i) => `text ${i}`);
     const out = await embedder.embedBatch(inputs);
     expect(out).toHaveLength(7);

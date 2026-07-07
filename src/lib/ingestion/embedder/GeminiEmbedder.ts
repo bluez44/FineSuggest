@@ -90,7 +90,13 @@ export class GeminiEmbedder implements Embedder {
 
       if (response.ok) {
         const json = (await response.json()) as EmbedResponse;
-        return json.embeddings.slice(0, batch.length).map((e) => e.values);
+        if (json.embeddings.length !== batch.length) {
+          throw new IngestionError(
+            `Expected ${batch.length} embeddings, got ${json.embeddings.length}`,
+            'embed',
+          );
+        }
+        return json.embeddings.map((e) => e.values);
       }
 
       // Retry on 429 + 5xx; fail fast on 4xx.
