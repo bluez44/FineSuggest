@@ -9,6 +9,7 @@ const serverSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().optional().default(''),
   ADMIN_EMAILS: z.string().optional().default(''),
   APP_URL: z.string().url().default('http://localhost:3000'),
+  INGEST_WEBHOOK_SECRET: z.string().min(16, 'Set INGEST_WEBHOOK_SECRET (any 32+ char random)'),
 });
 
 const clientSchema = z.object({
