@@ -4,7 +4,7 @@ const serverSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional().default(''),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1, 'Set GOOGLE_GENERATIVE_AI_API_KEY (Google AI Studio → API key)'),
   UPSTASH_REDIS_REST_URL: z.string().optional().default(''),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional().default(''),
   ADMIN_EMAILS: z.string().optional().default(''),
