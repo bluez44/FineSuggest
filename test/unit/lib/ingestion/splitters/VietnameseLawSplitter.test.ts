@@ -39,14 +39,12 @@ describe('VietnameseLawSplitter', () => {
     chunks.forEach((c) => expect(c.dieu).toBe('Điều 99'));
   });
 
-  it('captures khoan when Điều body contains "1." / "2." markers', async () => {
+  it('emits a chunk for a Điều that contains numbered clauses (khoan extraction deferred)', async () => {
     const doc = asDoc(fixture);
     const splitter = new VietnameseLawSplitter();
     const chunks = await splitter.split(doc);
     const dieu5 = chunks.find((c) => c.dieu === 'Điều 5');
     expect(dieu5).toBeDefined();
-    // The Điều body carries khoan info in metadata for later retrieval — the display khoan
-    // on this chunk is null (Điều chunk holds the whole article), but sub-chunks (when
-    // maxDieuSize triggers) may carry specific khoan.
+    // khoan extraction (parsing "1.", "2." inside a Điều body) is deferred — see TODO in VietnameseLawSplitter.
   });
 });

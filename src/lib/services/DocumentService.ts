@@ -23,7 +23,8 @@ export class DocumentService {
 
   async uploadFile(input: UploadFileInput): Promise<{ id: string; storagePath: string }> {
     const documentId = crypto.randomUUID();
-    const ext = input.filename.slice(input.filename.lastIndexOf('.'));
+    const rawExt = input.filename.slice(input.filename.lastIndexOf('.'));
+    const ext = /^\.[a-z0-9]{1,10}$/i.test(rawExt) ? rawExt : '';
     const storagePath = `${input.userId}/${documentId}${ext}`;
 
     const uploadRes = await this.client.storage

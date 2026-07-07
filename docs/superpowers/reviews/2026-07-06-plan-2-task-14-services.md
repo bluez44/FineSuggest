@@ -69,3 +69,7 @@ npm run typecheck → 0 (no errors)
 - `src/lib/services/DocumentService.ts` (99 lines)
 
 Both services follow DI pattern with user-scoped `SupabaseClient<Database>`.
+
+## Post-review fixes (2026-07-06)
+
+**Fix 2 (filename extension whitelist):** `DocumentService.uploadFile()` used `input.filename.slice(input.filename.lastIndexOf('.'))` which returns the full filename when no dot is present (e.g. `"myfile"` → `"myfile"`), producing a garbage storage path suffix. The code now validates the extracted extension against `/^\.[a-z0-9]{1,10}$/i` and falls back to an empty string for dotless filenames or those with unusual extensions, preventing malformed storage paths.

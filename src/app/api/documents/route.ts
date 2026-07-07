@@ -9,7 +9,9 @@ import { QuotaService, MAX_FILE_SIZE_MB } from '@/lib/services/QuotaService';
 export const runtime = 'nodejs';
 
 const urlSchema = z.object({
-  url: z.string().url(),
+  url: z.string().url().refine((u) => u.startsWith('http://') || u.startsWith('https://'), {
+    message: 'URL must use http(s) scheme',
+  }),
   title: z.string().min(1).max(200),
 });
 

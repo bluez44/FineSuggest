@@ -59,3 +59,7 @@ Uses existing packages:
 - lucide-react (FileText, Globe, Trash2)
 
 No new external dependencies added.
+
+## Post-review fixes (2026-07-06)
+
+**Fix 4 (polling stale-closure race):** The original implementation defined `fetchOnce` outside the `useEffect`, meaning the cleanup only cancelled the pending timeout but could not stop an in-flight `fetchOnce` from scheduling a new timer after the effect was torn down (e.g. on `refreshKey` change or unmount). The function was moved inside the effect and a `cancelled` boolean flag was introduced; every state update and new timer registration now checks `cancelled`, preventing ghost polls and state updates on unmounted/re-keyed components.

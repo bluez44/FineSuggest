@@ -41,3 +41,11 @@ Created `src/app/api/ingest/process/route.ts` — a webhook-guarded worker endpo
 ✓ `INGEST_WEBHOOK_SECRET` value added to `.env.local` — length: 64 characters (32 random bytes as hex)
 
 Notes: Secret generated via `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` — produces a 64-character hex string. `.env.local` not staged or committed.
+
+## Post-review fixes (2026-07-06)
+
+**Fix 1 (bearer timing-safe comparison):** The original `auth !== expected` string comparison was vulnerable to timing-based secret oracle attacks. Replaced with SHA-256 hash of both values followed by `timingSafeEqual` from `node:crypto`, eliminating the early-exit branch that could leak secret length information.
+
+**Fix 3B (source_url SSRF scheme restriction):** `z.string().url()` accepted `file://`, `javascript:`, and `data:` URIs; Node `fetch` can follow `file://` to read local files. Added a `.refine()` guard on `source_url` inside `bodySchema` that rejects any non-null value not starting with `http://` or `https://`.
+
+**Fix 5 (failStatus error logging):** `failStatus()` previously discarded the Supabase `update` return value, so DB write failures were silently swallowed. Destructured `{ error }` from the update response and added a `console.error` log when it is non-null, ensuring infrastructure errors surface in server logs.

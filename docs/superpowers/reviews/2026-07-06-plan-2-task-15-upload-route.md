@@ -42,3 +42,7 @@ File uploads require both `file` and `title` form fields.
 
 ---
 Implements verbatim from brief spec. Runtime set to `nodejs` for pdfjs/mammoth/jsdom compatibility.
+
+## Post-review fixes (2026-07-06)
+
+**Fix 3A (URL scheme SSRF restriction):** The original `urlSchema` used `z.string().url()` which accepts `file://`, `javascript:`, and `data:` URIs. An attacker could submit a `file:///etc/passwd` URL and trigger the ingestion pipeline to fetch local files. A `.refine()` check was added to `urlSchema` rejecting any URL that does not start with `http://` or `https://`, closing the SSRF vector at the API boundary before the URL ever reaches the ingestion worker.

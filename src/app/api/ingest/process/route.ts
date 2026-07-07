@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { serverEnv } from '@/lib/env';
@@ -17,7 +18,10 @@ const bodySchema = z.object({
     owner_id: z.string().uuid().nullable(),
     source_type: z.enum(['pdf', 'docx', 'txt', 'md', 'url']),
     storage_path: z.string().nullable(),
-    source_url: z.string().url().nullable(),
+    source_url: z.string().url().nullable().refine(
+    (u) => u === null || u.startsWith('http://') || u.startsWith('https://'),
+    { message: 'source_url must use http(s) scheme' },
+  ),
     status: z.string(),
   }),
 });
@@ -25,10 +29,12 @@ const bodySchema = z.object({
 const BUCKET = 'documents';
 
 export async function POST(req: Request) {
-  // 1. Verify shared secret
+  // 1. Verify shared secret (timing-safe comparison)
   const auth = req.headers.get('authorization') ?? '';
   const expected = `Bearer ${serverEnv.INGEST_WEBHOOK_SECRET}`;
-  if (auth !== expected) {
+  const authHash = createHash('sha256').update(auth).digest();
+  const expectedHash = createHash('sha256').update(expected).digest();
+  if (!timingSafeEqual(authHash, expectedHash)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -92,7 +98,8 @@ async function failStatus(
   id: string,
   message: string,
 ) {
-  await admin.from('documents').update({ status: 'failed', error_message: message }).eq('id', id);
+  const { error } = await admin.from('documents').update({ status: 'failed', error_message: message }).eq('id', id);
+  if (error) console.error('failStatus update failed', { id, error });
   return NextResponse.json({ error: message }, { status: 400 });
 }
 

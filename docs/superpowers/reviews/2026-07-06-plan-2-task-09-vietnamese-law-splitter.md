@@ -154,6 +154,10 @@ Contains a typical Vietnamese regulation structure:
 
 The implementation is minimal, focused, and matches the specification exactly. All tests pass, typecheck is clean, and the regex patterns are well-documented. No regressions or edge cases were encountered during TDD validation.
 
+## Post-review fixes (2026-07-06)
+
+**Fix 6 (khoan test rename + TODO comment):** Test 5 was named `'captures khoan when Điều body contains "1." / "2." markers'` which implied khoan metadata is extracted, but the implementation does not populate `khoan` — the test only asserts that the Điều 5 chunk exists. The test was renamed to `'emits a chunk for a Điều that contains numbered clauses (khoan extraction deferred)'` with an explanatory comment. A `TODO(plan-3)` block was also added at the top of `VietnameseLawSplitter` documenting the intended per-Khoản and per-Điểm sub-chunk approach for Plan 3.
+
 ### Future Enhancement Opportunities
 
 1. **Khoan/Diem Parsing:** Current implementation could be extended to parse "1.", "2.", "a)", "b)" markers within article bodies to populate `khoan` and `diem` metadata for finer-grained structure

@@ -14,6 +14,12 @@ const DIEU_RE = /^Điều\s+(\d+)[.:]/m;
 const DIEU_SPLIT_RE = /(?=^Điều\s+\d+[.:])/gm;
 
 export class VietnameseLawSplitter implements ChunkSplitter {
+  // TODO(plan-3): current implementation emits one chunk per Điều but never populates
+  // khoan/diem metadata. Per-Khoản (numbered clauses inside a Điều) and per-Điểm (lettered
+  // sub-points) chunk-level metadata is needed for finer-grained RAG citations in Plan 3.
+  // Approach: parse "^\d+\." and "^[a-z]\)" markers within each Điều body and emit sub-chunks
+  // carrying dieu + khoan (+ diem) on each.
+
   private maxDieuSize: number;
   private sub: RecursiveSplitter;
 

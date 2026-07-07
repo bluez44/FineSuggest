@@ -11,27 +11,29 @@ export function DocumentList({ refreshKey }: { refreshKey: number }) {
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function fetchOnce() {
-    try {
-      const res = await fetch('/api/documents');
-      if (!res.ok) throw new Error(`GET failed: ${res.status}`);
-      const json = (await res.json()) as { documents: DocumentRow[] };
-      setDocs(json.documents);
-      setError(null);
-      // Continue polling if any doc is still in-flight.
-      const inFlight = json.documents.some((d) => d.status === 'pending' || d.status === 'processing');
-      if (inFlight) {
-        timer.current = setTimeout(fetchOnce, POLL_INTERVAL);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }
-
   useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
+    let cancelled = false;
+
+    async function fetchOnce() {
+      try {
+        const res = await fetch('/api/documents');
+        if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+        const json = (await res.json()) as { documents: DocumentRow[] };
+        if (cancelled) return;
+        setDocs(json.documents);
+        setError(null);
+        const inFlight = json.documents.some((d) => d.status === 'pending' || d.status === 'processing');
+        if (inFlight && !cancelled) {
+          timer.current = setTimeout(fetchOnce, POLL_INTERVAL);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      }
+    }
+
     fetchOnce();
     return () => {
+      cancelled = true;
       if (timer.current) clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
