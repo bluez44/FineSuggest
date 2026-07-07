@@ -80,5 +80,13 @@ export async function POST(req: Request) {
   return NextResponse.json({ error: 'Unsupported content type' }, { status: 415 });
 }
 
+export async function GET() {
+  const user = await requireUser();
+  const supabase = await createServerClient();
+  const documents = new DocumentService(supabase);
+  const rows = await documents.list(user.id);
+  return NextResponse.json({ documents: rows });
+}
+
 // Re-export MAX_FILE_SIZE_MB for the client to render limit copy.
 export { MAX_FILE_SIZE_MB };
