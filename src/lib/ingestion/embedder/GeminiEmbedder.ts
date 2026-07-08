@@ -1,7 +1,7 @@
 import type { Embedder } from '@/lib/ingestion/embedder/Embedder';
 import { IngestionError } from '@/lib/ingestion/types';
 
-const MODEL = 'text-embedding-004';
+const MODEL = 'gemini-embedding-001';
 const EXPECTED_DIM = 768;
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:batchEmbedContents`;
 
@@ -71,6 +71,7 @@ export class GeminiEmbedder implements Embedder {
         requests: batch.map((text) => ({
           model: `models/${MODEL}`,
           content: { parts: [{ text }] },
+          outputDimensionality: EXPECTED_DIM,
         })),
       };
 

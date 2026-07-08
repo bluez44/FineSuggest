@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,12 +18,23 @@ describe.skipIf(!RUN)('ingestion pipeline against live Supabase', () => {
     const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     admin = createClient<Database>(URL, KEY);
 
-    // Ensure test profile exists (bypasses trigger by using service role).
-    const testUserId = '00000000-0000-0000-0000-000000000001';
-    ownerId = testUserId;
-    await admin.from('profiles').upsert({ id: testUserId, email: 'ingest-test@example.com', role: 'user' });
+    // Look up or create a real auth user — auth.admin.createUser assigns its own UUID,
+    // so we can't hardcode one. The profile row is created by the on-auth-user trigger.
+    const testEmail = 'ingest-test@example.com';
+    const { data: list } = await admin.auth.admin.listUsers();
+    const existing = list?.users?.find((u) => u.email === testEmail);
+    if (existing) {
+      ownerId = existing.id;
+    } else {
+      const { data: created, error } = await admin.auth.admin.createUser({
+        email: testEmail,
+        email_confirm: true,
+      });
+      if (error || !created?.user) throw error ?? new Error('createUser returned no user');
+      ownerId = created.user.id;
+    }
 
-    const { data } = await admin
+    const { data, error: insertErr } = await admin
       .from('documents')
       .insert({
         owner_id: ownerId,
@@ -33,7 +45,8 @@ describe.skipIf(!RUN)('ingestion pipeline against live Supabase', () => {
       })
       .select('id')
       .single();
-    documentId = data!.id;
+    if (insertErr || !data) throw insertErr ?? new Error('document insert returned no row');
+    documentId = data.id;
   });
 
   afterAll(async () => {
