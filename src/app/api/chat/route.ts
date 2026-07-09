@@ -27,15 +27,36 @@ const QUESTION_MAX_CHARS = 2000;
 const CHAT_MODEL = 'gemini-2.5-flash';
 const FALLBACK_ANSWER = 'Tôi không tìm thấy nội dung này trong tài liệu hiện có.';
 
+// Vercel AI SDK v7 UIMessage shape — `parts` array, not a flat `content` string.
+const partSchema = z
+  .object({
+    type: z.string(),
+    text: z.string().optional(),
+  })
+  .passthrough();
+
+const uiMessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(['user', 'assistant', 'system']),
+  parts: z.array(partSchema).default([]),
+});
+
 const bodySchema = z.object({
-  messages: z
-    .array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string() }))
-    .min(1),
+  id: z.string().optional(),
+  trigger: z.string().optional(),
+  messages: z.array(uiMessageSchema).min(1),
   data: z
     .object({ conversationId: z.string().uuid().nullable().optional() })
     .optional()
     .default({}),
 });
+
+function messageText(m: z.infer<typeof uiMessageSchema>): string {
+  return m.parts
+    .filter((p): p is { type: string; text: string } => p.type === 'text' && typeof p.text === 'string')
+    .map((p) => p.text)
+    .join('');
+}
 
 interface LogFields {
   requestId: string;
@@ -83,11 +104,11 @@ export async function POST(req: Request) {
   }
 
   const lastUser = [...parsed.data.messages].reverse().find((m) => m.role === 'user');
-  if (!lastUser || lastUser.content.trim().length === 0) {
+  const question = lastUser ? messageText(lastUser).trim() : '';
+  if (question.length === 0) {
     log({ requestId, userId: user.id, conversationId: null, retrievedCount: 0, topSimilarity: null, status: 'bad_request', latencyMs: Date.now() - startedAt });
     return NextResponse.json({ error: 'empty question' }, { status: 400 });
   }
-  const question = lastUser.content.trim();
   if (question.length > QUESTION_MAX_CHARS) {
     log({ requestId, userId: user.id, conversationId: null, retrievedCount: 0, topSimilarity: null, status: 'bad_request', latencyMs: Date.now() - startedAt });
     return NextResponse.json({ error: `question exceeds ${QUESTION_MAX_CHARS} chars` }, { status: 400 });

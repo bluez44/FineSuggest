@@ -117,7 +117,10 @@ describe.skipIf(!RUN)('RAG chat pipeline against live Supabase + Gemini', () => 
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: 'Xe máy vượt đèn đỏ phạt bao nhiêu?' }],
+        // Vercel AI SDK v7 UIMessage shape (parts array, not flat content).
+        messages: [
+          { role: 'user', parts: [{ type: 'text', text: 'Xe máy vượt đèn đỏ phạt bao nhiêu?' }] },
+        ],
         data: { conversationId },
       }),
     });
