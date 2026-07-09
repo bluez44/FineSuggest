@@ -1,8 +1,15 @@
-export default function ChatPage() {
-  return (
-    <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Trò chuyện</h1>
-      <p className="text-slate-600">Tính năng trò chuyện sẽ được kích hoạt ở Plan 3.</p>
-    </div>
-  );
+import { redirect } from 'next/navigation';
+import { requireUser } from '@/lib/auth/requireUser';
+import { createServerClient } from '@/lib/supabase/server';
+import { ConversationService } from '@/lib/services/ConversationService';
+
+export default async function ChatIndexPage() {
+  const user = await requireUser();
+  const supabase = await createServerClient();
+  const svc = new ConversationService(supabase);
+  const list = await svc.list(user.id);
+
+  if (list.length > 0) redirect(`/chat/${list[0]!.id}`);
+  const created = await svc.create(user.id);
+  redirect(`/chat/${created.id}`);
 }
