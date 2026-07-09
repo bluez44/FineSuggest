@@ -1,4 +1,4 @@
-import { JSDOM } from 'jsdom';
+import { parseHTML } from 'linkedom';
 import { Readability } from '@mozilla/readability';
 import type { DocumentLoader } from '@/lib/ingestion/loaders/DocumentLoader';
 import { IngestionError, type LoaderInput, type RawDoc } from '@/lib/ingestion/types';
@@ -25,9 +25,13 @@ export class UrlLoader implements DocumentLoader {
       throw new IngestionError(`URL fetch failed with status ${response.status}`, 'load');
     }
 
+    // linkedom is a lightweight DOM shim without jsdom's broken ESM dep chain
+    // (html-encoding-sniffer → @exodus/bytes), so it works on Vercel serverless.
+    // For Readability's text extraction we don't need jsdom's full browser stack.
     const html = await response.text();
-    const dom = new JSDOM(html, { url: input.url });
-    const article = new Readability(dom.window.document).parse();
+    const { document } = parseHTML(html);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const article = new Readability(document as any).parse();
 
     if (!article?.textContent) {
       throw new IngestionError('No readable article found at URL', 'load');
