@@ -35,6 +35,7 @@ export function ChatShell({
   const [citationsByMessageId, setCitationsByMessageId] = useState<Record<string, Citation[]>>(
     initialCitationsByMessageId,
   );
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   const { messages, sendMessage, status } = useChat<UIMessage>({
     // cast required: DefaultChatTransport<UIMessage> is not assignable to
@@ -54,6 +55,14 @@ export function ChatShell({
           }));
         }
       }
+      // data-remaining carries quota count from both LLM and short-circuit paths.
+      if ((part as any).type === 'data-remaining') {
+        setRemaining((part as any).data as number);
+      }
+      // message-metadata carries remaining on the LLM path via toUIMessageStream.
+      if ((part as any).type === 'message-metadata' && (part as any).messageMetadata?.remaining !== undefined) {
+        setRemaining((part as any).messageMetadata.remaining as number);
+      }
     },
   });
 
@@ -67,7 +76,7 @@ export function ChatShell({
         <Composer
           disabled={isStreaming}
           onSubmit={(q) => sendMessage({ text: q })}
-          remaining={null}
+          remaining={remaining}
         />
       </div>
     </div>

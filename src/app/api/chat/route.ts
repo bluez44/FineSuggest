@@ -120,6 +120,7 @@ export async function POST(req: Request) {
     log({ requestId, userId: user.id, conversationId, retrievedCount: 0, topSimilarity: null, status: 'quota_exceeded', latencyMs: Date.now() - startedAt });
     return NextResponse.json({ error: 'quota_exceeded', dailyLimit: DAILY_QUESTION_LIMIT, reason: quotaRes.reason }, { status: 429 });
   }
+  const quotaRemaining = quotaRes.remaining;
 
   // 6. Persist user message.
   const userMsg = await conversations.appendMessage(conversationId, 'user', question);
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
         writer.write({ type: 'text-delta', id: 'fallback', delta: FALLBACK_ANSWER } as unknown as never);
         writer.write({ type: 'text-end', id: 'fallback' } as unknown as never);
         writer.write({ type: 'data-citations', data: [] as unknown as never } as unknown as never);
+        writer.write({ type: 'data-remaining', data: quotaRemaining } as unknown as never);
       },
     });
     return createUIMessageStreamResponse({ stream });
@@ -165,7 +167,7 @@ export async function POST(req: Request) {
   // 10. Build prompt with bounded history.
   const history: HistoryMessage[] = await conversations
     .getRecentMessages(conversationId, HISTORY_LIMIT + 1)
-    .then((rows) => rows.filter((r) => r.content !== question)) // exclude the msg we just wrote
+    .then((rows) => rows.filter((r) => r.id !== userMsg.id).map(({ role, content }) => ({ role, content })))
     .catch(() => []);
 
   const { system, messages } = buildChatMessages(retrieved, history.slice(-HISTORY_LIMIT), question);
@@ -184,7 +186,7 @@ export async function POST(req: Request) {
       writer.merge(
         toUIMessageStream({
           stream: result.stream,
-          messageMetadata: () => ({ conversationId: capturedConversationId }),
+          messageMetadata: () => ({ conversationId: capturedConversationId, remaining: quotaRemaining }),
         }) as unknown as never,
       );
       const [text, usage] = await Promise.all([result.text, result.usage]);

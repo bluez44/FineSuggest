@@ -12,11 +12,12 @@ interface Props {
 }
 
 const MARKER_RE = /(\[\d+\])/g;
+const IS_MARKER = /^\[\d+\]$/;
 
 function renderTextWithMarkers(text: string) {
   const segments = text.split(MARKER_RE);
   return segments.map((seg, i) =>
-    MARKER_RE.test(seg) ? (
+    IS_MARKER.test(seg) ? (
       <span key={i} className="rounded bg-amber-100 px-1 text-amber-900">
         {seg}
       </span>

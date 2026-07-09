@@ -3,6 +3,10 @@ import type { Database, Json } from '@/types/database';
 import type { Citation } from '@/lib/rag/citations';
 import type { HistoryMessage } from '@/lib/rag/prompt';
 
+export interface RecentMessage extends HistoryMessage {
+  id: string;
+}
+
 export interface ConversationSummary {
   id: string;
   title: string;
@@ -78,10 +82,10 @@ export class ConversationService {
     }));
   }
 
-  async getRecentMessages(id: string, limit: number): Promise<HistoryMessage[]> {
+  async getRecentMessages(id: string, limit: number): Promise<RecentMessage[]> {
     const { data, error } = await this.client
       .from('messages')
-      .select('role, content, created_at')
+      .select('id, role, content, created_at')
       .eq('conversation_id', id)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -90,7 +94,7 @@ export class ConversationService {
     return (data ?? [])
       .slice()
       .reverse()
-      .map((r) => ({ role: r.role, content: r.content }));
+      .map((r) => ({ id: r.id, role: r.role, content: r.content }));
   }
 
   async appendMessage(
@@ -113,6 +117,14 @@ export class ConversationService {
       .select('id')
       .single();
     if (error || !data) throw new Error(`append message failed: ${error?.message ?? 'no data'}`);
+
+    // Best-effort: touch conversations.updated_at so the sidebar ordering stays fresh.
+    const { error: touchErr } = await this.client
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+    if (touchErr) console.error('conversations.updated_at touch failed', touchErr);
+
     return { id: data.id };
   }
 

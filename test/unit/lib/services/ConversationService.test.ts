@@ -50,12 +50,12 @@ describe('ConversationService', () => {
     await expect(svc.rename('c-x', 'user-1', 'new title')).rejects.toThrow(/not found|owned/i);
   });
 
-  it('getRecentMessages returns role+content only, oldest→newest, N-limited', async () => {
+  it('getRecentMessages returns id+role+content, oldest→newest, N-limited', async () => {
     const rows = [
-      { role: 'assistant', content: 'A2', created_at: '2026-07-08T09:02:00Z' },
-      { role: 'user', content: 'Q2', created_at: '2026-07-08T09:01:00Z' },
-      { role: 'assistant', content: 'A1', created_at: '2026-07-08T09:00:30Z' },
-      { role: 'user', content: 'Q1', created_at: '2026-07-08T09:00:00Z' },
+      { id: 'm4', role: 'assistant', content: 'A2', created_at: '2026-07-08T09:02:00Z' },
+      { id: 'm3', role: 'user', content: 'Q2', created_at: '2026-07-08T09:01:00Z' },
+      { id: 'm2', role: 'assistant', content: 'A1', created_at: '2026-07-08T09:00:30Z' },
+      { id: 'm1', role: 'user', content: 'Q1', created_at: '2026-07-08T09:00:00Z' },
     ];
     const limit = vi.fn().mockResolvedValue({ data: rows, error: null });
     const order = vi.fn(() => ({ limit }));
@@ -65,10 +65,10 @@ describe('ConversationService', () => {
     const svc = new ConversationService({ from } as never);
     const res = await svc.getRecentMessages('c-1', 4);
     expect(res).toEqual([
-      { role: 'user', content: 'Q1' },
-      { role: 'assistant', content: 'A1' },
-      { role: 'user', content: 'Q2' },
-      { role: 'assistant', content: 'A2' },
+      { id: 'm1', role: 'user', content: 'Q1' },
+      { id: 'm2', role: 'assistant', content: 'A1' },
+      { id: 'm3', role: 'user', content: 'Q2' },
+      { id: 'm4', role: 'assistant', content: 'A2' },
     ]);
   });
 
@@ -76,7 +76,14 @@ describe('ConversationService', () => {
     const single = vi.fn().mockResolvedValue({ data: { id: 'm-new' }, error: null });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    const from = vi.fn(() => ({ insert }));
+    // Follow-up touch: .from('conversations').update().eq()
+    const touchEq = vi.fn().mockResolvedValue({ error: null });
+    const touchUpdate = vi.fn(() => ({ eq: touchEq }));
+    const from = vi.fn((table: string) => {
+      if (table === 'messages') return { insert };
+      if (table === 'conversations') return { update: touchUpdate };
+      return { insert };
+    });
     const svc = new ConversationService({ from } as never);
     const citations = [{ chunkId: 'x', documentId: 'd', dieu: null, khoan: null, diem: null, page: null, documentTitle: 'T', snippet: 's', markerIndex: 1 }];
     const res = await svc.appendMessage('c-1', 'assistant', 'hello', citations);
@@ -87,6 +94,8 @@ describe('ConversationService', () => {
       content: 'hello',
       citations,
     });
+    expect(touchUpdate).toHaveBeenCalledWith(expect.objectContaining({ updated_at: expect.any(String) }));
+    expect(touchEq).toHaveBeenCalledWith('id', 'c-1');
   });
 
   it('ownedBy returns true when exists, false when null', async () => {
