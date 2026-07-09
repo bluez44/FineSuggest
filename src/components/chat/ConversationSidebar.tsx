@@ -21,6 +21,7 @@ export function ConversationSidebar({ activeId, initialConversations }: Props) {
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [creating, setCreating] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => setConversations(initialConversations), [initialConversations]);
 
@@ -39,13 +40,23 @@ export function ConversationSidebar({ activeId, initialConversations }: Props) {
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      toast.error('Xóa thất bại');
-      return;
+    if (deletingIds.has(id)) return;
+    setDeletingIds((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        toast.error('Xóa thất bại');
+        return;
+      }
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (id === activeId) router.push('/chat');
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (id === activeId) router.push('/chat');
   }
 
   return (
@@ -66,7 +77,8 @@ export function ConversationSidebar({ activeId, initialConversations }: Props) {
             </Link>
             <button
               onClick={() => handleDelete(c.id)}
-              className="ml-2 text-slate-400 opacity-0 hover:text-red-600 group-hover:opacity-100"
+              disabled={deletingIds.has(c.id)}
+              className="ml-2 text-slate-400 opacity-0 hover:text-red-600 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Xóa"
             >
               ×
