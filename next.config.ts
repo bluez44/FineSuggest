@@ -1,10 +1,10 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // Keep Node-only ingestion deps as require()-at-runtime instead of bundled.
   // mammoth touches Node fs; pdfjs-dist uses a worker load path that breaks
   // when bundled by Turbopack.
-  serverExternalPackages: ["mammoth", "pdfjs-dist"],
+  serverExternalPackages: ['mammoth', 'pdfjs-dist', '@napi-rs/canvas'],
 };
 
 export default nextConfig;

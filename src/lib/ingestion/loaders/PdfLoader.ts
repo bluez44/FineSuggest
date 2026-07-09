@@ -8,6 +8,10 @@ export class PdfLoader implements DocumentLoader {
     }
 
     // pdfjs-dist v6 legacy build works in Node.
+    // Load the canvas polyfills first so pdf.js does not warn/fail when it tries
+    // to resolve DOMMatrix / Path2D in serverless Node runtimes.
+    await ensurePdfCanvasPolyfills();
+
     // Dynamic import so unit tests that never touch PdfLoader don't pay the parse cost.
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
@@ -19,7 +23,7 @@ export class PdfLoader implements DocumentLoader {
         useSystemFonts: false,
       }).promise;
     } catch (err) {
-      throw new IngestionError('Failed to parse PDF', 'load', err);
+      throw new IngestionError('Failed to parse PDF' + (err instanceof Error ? err.message : String(err)), 'load', err);
     }
 
     const parts: string[] = [];
@@ -30,7 +34,7 @@ export class PdfLoader implements DocumentLoader {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items
-        .map((item: any) => ('str' in item ? item.str : ''))
+        .map((item) => (isTextItem(item) ? item.str : ''))
         .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -54,4 +58,30 @@ export class PdfLoader implements DocumentLoader {
       },
     };
   }
+}
+
+function isTextItem(item: unknown): item is { str: string } {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'str' in item &&
+    typeof (item as { str?: unknown }).str === 'string'
+  );
+}
+
+async function ensurePdfCanvasPolyfills() {
+  const globals = globalThis as typeof globalThis & {
+    DOMMatrix?: typeof globalThis.DOMMatrix;
+    Path2D?: typeof globalThis.Path2D;
+    ImageData?: typeof globalThis.ImageData;
+  };
+
+  if (globals.DOMMatrix && globals.Path2D && globals.ImageData) {
+    return;
+  }
+
+  const canvas = await import('@napi-rs/canvas');
+  globals.DOMMatrix ??= canvas.DOMMatrix as unknown as typeof globalThis.DOMMatrix;
+  globals.Path2D ??= canvas.Path2D as unknown as typeof globalThis.Path2D;
+  globals.ImageData ??= canvas.ImageData as unknown as typeof globalThis.ImageData;
 }
