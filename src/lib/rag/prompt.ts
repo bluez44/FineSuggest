@@ -1,15 +1,11 @@
 import type { ModelMessage } from 'ai';
 import { strictRagSystemPrompt } from './systemPrompt';
+import type { RetrievedChunk } from './retrieve';
 
-// Structural type shared with retrieve.ts (declared here to avoid a hard
-// import cycle; retrieve.ts declares the canonical RetrievedChunk).
-export interface ChunkForPrompt {
-  content: string;
-  dieu: string | null;
-  khoan: string | null;
-  diem: string | null;
-  documentTitle: string;
-}
+export type ChunkForPrompt = Pick<
+  RetrievedChunk,
+  'content' | 'dieu' | 'khoan' | 'diem' | 'documentTitle'
+>;
 
 export interface HistoryMessage {
   role: 'user' | 'assistant';
