@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChatMessages } from '@/lib/rag/prompt';
+import { buildChatMessages, type SessionDocument } from '@/lib/rag/prompt';
 import { strictRagSystemPrompt } from '@/lib/rag/systemPrompt';
 
 const chunk = (n: number, over: Partial<{ dieu: string | null; khoan: string | null; diem: string | null; documentTitle: string; content: string }> = {}) => ({
@@ -52,10 +52,35 @@ describe('buildChatMessages', () => {
     expect(messages).toEqual([{ role: 'user', content: 'Chỉ có câu này' }]);
   });
 
-  it('handles empty retrieved (still returns valid system with CONTEXT block empty)', () => {
+  it('empty retrieved → CONTEXT block contains explicit "no chunks" marker', () => {
     const { system } = buildChatMessages([], [], 'Câu hỏi');
     expect(system).toContain(strictRagSystemPrompt);
     expect(system).toContain('CONTEXT:');
-    expect(system.replace(strictRagSystemPrompt, '').trim().split('\n').every((l) => l === 'CONTEXT:' || l === '')).toBe(true);
+    expect(system).toContain('(không có đoạn trích liên quan)');
+  });
+
+  it('SESSION INFO defaults to empty state when no sessionDocs given', () => {
+    const { system } = buildChatMessages([], [], 'Câu hỏi');
+    expect(system).toContain('SESSION INFO:');
+    expect(system).toContain('Tài liệu người dùng đã tải lên: (chưa có)');
+    expect(system).toContain('Tài liệu công khai của hệ thống: (chưa có)');
+  });
+
+  it('SESSION INFO lists private and public docs in separate groups', () => {
+    const docs: SessionDocument[] = [
+      { title: 'Nghị định 100/2019', visibility: 'public' },
+      { title: 'Ghi chú cá nhân', visibility: 'private' },
+      { title: 'Luật giao thông đường bộ', visibility: 'public' },
+    ];
+    const { system } = buildChatMessages([], [], 'Bạn có thể giúp gì?', docs);
+    expect(system).toMatch(/Tài liệu người dùng đã tải lên:\n- Ghi chú cá nhân/);
+    expect(system).toMatch(/Tài liệu công khai của hệ thống:\n- Nghị định 100\/2019\n- Luật giao thông đường bộ/);
+  });
+
+  it('SESSION INFO empty label when one group is empty', () => {
+    const docs: SessionDocument[] = [{ title: 'Chỉ private', visibility: 'private' }];
+    const { system } = buildChatMessages([], [], 'H', docs);
+    expect(system).toContain('Tài liệu người dùng đã tải lên:\n- Chỉ private');
+    expect(system).toContain('Tài liệu công khai của hệ thống: (chưa có)');
   });
 });
