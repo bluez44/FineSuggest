@@ -32,7 +32,7 @@ const bodySchema = z.object({
     .array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string() }))
     .min(1),
   data: z
-    .object({ conversationId: z.string().nullable().optional() })
+    .object({ conversationId: z.string().uuid().nullable().optional() })
     .optional()
     .default({}),
 });
@@ -84,10 +84,12 @@ export async function POST(req: Request) {
 
   const lastUser = [...parsed.data.messages].reverse().find((m) => m.role === 'user');
   if (!lastUser || lastUser.content.trim().length === 0) {
+    log({ requestId, userId: user.id, conversationId: null, retrievedCount: 0, topSimilarity: null, status: 'bad_request', latencyMs: Date.now() - startedAt });
     return NextResponse.json({ error: 'empty question' }, { status: 400 });
   }
   const question = lastUser.content.trim();
   if (question.length > QUESTION_MAX_CHARS) {
+    log({ requestId, userId: user.id, conversationId: null, retrievedCount: 0, topSimilarity: null, status: 'bad_request', latencyMs: Date.now() - startedAt });
     return NextResponse.json({ error: `question exceeds ${QUESTION_MAX_CHARS} chars` }, { status: 400 });
   }
 

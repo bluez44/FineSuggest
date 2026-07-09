@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const TEST_CONV_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
 // Hoisted mocks. These modules are dynamically imported by the route.
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn(async () => ({
@@ -69,7 +71,7 @@ beforeEach(() => {
   mockGetRecent.mockResolvedValue([]);
 });
 
-async function callRoute(body: unknown, options?: { conversationId?: string | null }) {
+async function callRoute(body: unknown) {
   const { POST } = await import('@/app/api/chat/route');
   return POST(
     new Request('http://localhost/api/chat', {
@@ -83,27 +85,27 @@ async function callRoute(body: unknown, options?: { conversationId?: string | nu
 describe('POST /api/chat', () => {
   it('returns 401 when no session', async () => {
     mockUser = null;
-    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(401);
   });
 
   it('returns 429 when quota exceeded', async () => {
     mockConsume.mockResolvedValue({ ok: false, reason: 'quota' });
-    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(429);
   });
 
   it('returns 403 when conversationId is provided but not owned', async () => {
     mockOwnedBy.mockResolvedValue(false);
     mockConsume.mockResolvedValue({ ok: true, remaining: 49 });
-    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(403);
   });
 
   it('returns 400 when the last user message is empty or too long', async () => {
     mockConsume.mockResolvedValue({ ok: true, remaining: 49 });
     const long = 'x'.repeat(2001);
-    const res = await callRoute({ messages: [{ role: 'user', content: long }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: long }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(400);
   });
 
@@ -111,7 +113,7 @@ describe('POST /api/chat', () => {
     mockConsume.mockResolvedValue({ ok: true, remaining: 49 });
     mockEmbed.mockRejectedValue(new Error('gemini boom'));
     mockAppend.mockResolvedValueOnce({ id: 'm-user' });
-    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(500);
     expect(mockDeleteMessage).toHaveBeenCalledWith('m-user');
   });
@@ -121,7 +123,7 @@ describe('POST /api/chat', () => {
     mockEmbed.mockResolvedValue([[0.1, 0.2]]);
     mockRetrieve.mockResolvedValue([]);
     mockAppend.mockResolvedValueOnce({ id: 'm-user' }).mockResolvedValueOnce({ id: 'm-assistant' });
-    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: 'c-1' } });
+    const res = await callRoute({ messages: [{ role: 'user', content: 'q' }], data: { conversationId: TEST_CONV_ID } });
     expect(res.status).toBe(200);
     // Second call is the fallback assistant persist.
     const secondCall = mockAppend.mock.calls[1]!;
