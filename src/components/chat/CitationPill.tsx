@@ -1,6 +1,7 @@
 'use client';
 
 import type { Citation } from '@/lib/rag/citations';
+import { BookOpen } from 'lucide-react';
 
 interface Props {
   citation: Citation;
@@ -18,10 +19,11 @@ export function CitationPill({ citation, onSelect }: Props) {
     <button
       type="button"
       onClick={() => onSelect(citation)}
-      className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs text-slate-700 hover:border-slate-400 hover:bg-slate-200"
-      title={citation.documentTitle}
+      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-white/15 transition-all cursor-pointer shadow-sm active:scale-95 select-none"
+      title={citation.documentTitle ?? undefined}
     >
-      {shortLabel(citation)}
+      <BookOpen className="h-3 w-3 text-accent" />
+      <span className="font-medium">{shortLabel(citation)}</span>
     </button>
   );
 }

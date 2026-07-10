@@ -38,30 +38,28 @@ export function ChatShell({
   const [remaining, setRemaining] = useState<number | null>(null);
 
   const { messages, sendMessage, status } = useChat<UIMessage>({
-    // cast required: DefaultChatTransport<UIMessage> is not assignable to
-    // ChatTransport<UIMessage> as seen by @ai-sdk/react v4 due to its stricter
-    // generic variance — pre-authorized by task brief.
     transport: transport as never,
     messages: initialMessages,
     onData: (part) => {
-      // Custom data-citations parts land here as { type: 'data-citations', data: Citation[] }.
-      // Cast to any is required because UIMessage has no DATA_PARTS generic bound here.
-      if ((part as any).type === 'data-citations') {
+      const partObj = part as {
+        type: string;
+        data?: unknown;
+        messageMetadata?: { remaining?: number };
+      };
+      if (partObj.type === 'data-citations') {
         const last = messages[messages.length - 1];
         if (last?.role === 'assistant') {
           setCitationsByMessageId((prev) => ({
             ...prev,
-            [last.id]: (part as any).data as Citation[],
+            [last.id]: (partObj.data as Citation[]) ?? [],
           }));
         }
       }
-      // data-remaining carries quota count from both LLM and short-circuit paths.
-      if ((part as any).type === 'data-remaining') {
-        setRemaining((part as any).data as number);
+      if (partObj.type === 'data-remaining') {
+        setRemaining((partObj.data as number) ?? null);
       }
-      // message-metadata carries remaining on the LLM path via toUIMessageStream.
-      if ((part as any).type === 'message-metadata' && (part as any).messageMetadata?.remaining !== undefined) {
-        setRemaining((part as any).messageMetadata.remaining as number);
+      if (partObj.type === 'message-metadata' && partObj.messageMetadata?.remaining !== undefined) {
+        setRemaining(partObj.messageMetadata.remaining);
       }
     },
   });
@@ -69,9 +67,14 @@ export function ChatShell({
   const isStreaming = status === 'streaming' || status === 'submitted';
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
-      <aside className="hidden w-64 border-r border-slate-200 bg-white md:block">{sidebar}</aside>
-      <div className="flex flex-1 flex-col">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
+      {/* Conversation list sidebar (glass style) */}
+      <aside className="hidden md:block w-72 border-r border-white/[0.08] bg-sidebar/20 backdrop-blur-sm shrink-0">
+        {sidebar}
+      </aside>
+
+      {/* Main chat column */}
+      <div className="flex flex-1 flex-col overflow-hidden relative">
         <MessageList messages={messages} citationsByMessageId={citationsByMessageId} />
         <Composer
           disabled={isStreaming}
