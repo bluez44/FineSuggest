@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DocumentCard, type DocumentRow } from './DocumentCard';
+import { FolderOpen } from 'lucide-react';
 
 const POLL_INTERVAL = 3000;
 
@@ -49,21 +50,48 @@ export function DocumentList({ refreshKey }: { refreshKey: number }) {
     }
   }
 
-  if (error) return <p className="text-sm text-destructive">Lỗi tải danh sách: {error}</p>;
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        Lỗi tải danh sách tài liệu: {error}
+      </div>
+    );
+  }
+
   if (docs === null) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full" />
+          <div key={i} className="glass-card rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-[60%] rounded-md bg-white/5" />
+              <Skeleton className="h-5 w-[20%] rounded-md bg-white/5" />
+            </div>
+            <Skeleton className="h-4 w-[40%] rounded-md bg-white/5" />
+          </div>
         ))}
       </div>
     );
   }
+
   if (docs.length === 0) {
-    return <p className="text-sm text-muted-foreground">Chưa có tài liệu nào.</p>;
+    return (
+      <div className="flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl p-12 text-center space-y-4 bg-white/[0.01]">
+        <div className="p-4 rounded-full bg-white/5 text-muted-foreground/60">
+          <FolderOpen className="h-8 w-8" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">Không tìm thấy tài liệu</h3>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+            Hệ thống chưa có tài liệu cá nhân nào. Hãy thêm tài liệu bằng nút phía trên.
+          </p>
+        </div>
+      </div>
+    );
   }
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
       {docs.map((d) => (
         <DocumentCard key={d.id} doc={d} onDelete={onDelete} />
       ))}
