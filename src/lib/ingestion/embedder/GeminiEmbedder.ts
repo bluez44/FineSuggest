@@ -101,17 +101,18 @@ export class GeminiEmbedder implements Embedder {
       }
 
       // Retry on 429 + 5xx; fail fast on 4xx.
+      const detail = await response.text();
       if (response.status !== 429 && response.status < 500) {
-        const detail = await response.text();
         throw new IngestionError(`Gemini embed failed ${response.status}: ${detail}`, 'embed');
       }
 
-      lastErr = new Error(`status ${response.status}`);
+      lastErr = new Error(`status ${response.status}: ${detail}`);
       await this.sleep(this.backoffMs * 2 ** attempt);
       attempt++;
     }
 
-    throw new IngestionError('Gemini embed exhausted retries', 'embed', lastErr);
+    const lastMsg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    throw new IngestionError(`Gemini embed exhausted retries (${lastMsg})`, 'embed', lastErr);
   }
 
   private sleep(ms: number): Promise<void> {
